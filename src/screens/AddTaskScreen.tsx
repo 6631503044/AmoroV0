@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  Modal,
 } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
@@ -40,6 +41,25 @@ const NOTIFICATION_OPTIONS = [
   { id: "6", label: "1 day before", value: 1440 },
 ]
 
+// Days of the week for calendar
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+
+// Months for calendar
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+]
+
 const AddTaskScreen = () => {
   const navigation = useNavigation()
   const { theme } = useTheme()
@@ -62,37 +82,83 @@ const AddTaskScreen = () => {
   const [showEndTimePicker, setShowEndTimePicker] = useState(false)
   const [showNotificationOptions, setShowNotificationOptions] = useState(false)
 
-  const handleSave = () => {
-    // Here you would save the activity to your data store
-    console.log({
-      withPartner,
-      title,
-      description,
-      location,
-      date,
-      startTime,
-      endTime,
-      selectedTag,
-      notificationTime,
-    })
+  // Calendar state
+  const [currentMonth, setCurrentMonth] = useState(date.getMonth())
+  const [currentYear, setCurrentYear] = useState(date.getFullYear())
+  const [selectedDay, setSelectedDay] = useState(date.getDate())
 
-    navigation.goBack()
+  // Time picker state
+  const [selectedHours, setSelectedHours] = useState(startTime.getHours())
+  const [selectedMinutes, setSelectedMinutes] = useState(startTime.getMinutes())
+  const [isStartTime, setIsStartTime] = useState(true)
+
+  // UI state
+  const [isMounted, setIsMounted] = useState(true)
+
+  // Set isMounted to false when component unmounts
+  useEffect(() => {
+    return () => {
+      setIsMounted(false)
+    }
+  }, [])
+
+  // Safe state update function to prevent updates on unmounted component
+  const safeSetState = (setter, value) => {
+    if (isMounted) {
+      setter(value)
+    }
+  }
+
+  const handleSave = () => {
+    // Validate required fields
+    if (!title.trim()) {
+      // You would typically show an error message here
+      console.warn("Title is required")
+      return
+    }
+
+    // Here you would save the activity to your data store
+    try {
+      console.log({
+        withPartner,
+        title,
+        description,
+        location,
+        date,
+        startTime,
+        endTime,
+        selectedTag,
+        notificationTime,
+      })
+
+      navigation.goBack()
+    } catch (error) {
+      console.error("Error saving activity:", error)
+      // You would typically show an error message here
+    }
   }
 
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    })
+    try {
+      return `${MONTHS[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`
+    } catch (error) {
+      console.error("Error formatting date:", error)
+      return "Invalid date"
+    }
   }
 
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    })
+    try {
+      const hours = date.getHours()
+      const minutes = date.getMinutes()
+      const ampm = hours >= 12 ? "PM" : "AM"
+      const formattedHours = hours % 12 || 12
+      const formattedMinutes = minutes.toString().padStart(2, "0")
+      return `${formattedHours}:${formattedMinutes} ${ampm}`
+    } catch (error) {
+      console.error("Error formatting time:", error)
+      return "Invalid time"
+    }
   }
 
   const getSelectedNotificationLabel = () => {
@@ -100,8 +166,134 @@ const AddTaskScreen = () => {
     return option ? option.label : NOTIFICATION_OPTIONS[0].label
   }
 
+  // Get days in month
+  const getDaysInMonth = (month: number, year: number) => {
+    return new Date(year, month + 1, 0).getDate()
+  }
+
+  // Get first day of month (0 = Sunday, 1 = Monday, etc.)
+  const getFirstDayOfMonth = (month: number, year: number) => {
+    return new Date(year, month, 1).getDay()
+  }
+
+  // Generate calendar days
+  const generateCalendarDays = () => {
+    const daysInMonth = getDaysInMonth(currentMonth, currentYear)
+    const firstDay = getFirstDayOfMonth(currentMonth, currentYear)
+
+    const days = []
+
+    // Add empty spaces for days before the first day of the month
+    for (let i = 0; i < firstDay; i++) {
+      days.push({ day: "", isCurrentMonth: false })
+    }
+
+    // Add days of the current month
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push({ day: i, isCurrentMonth: true })
+    }
+
+    return days
+  }
+
+  // Handle date selection
+  const handleDateSelection = (day: number) => {
+    if (day) {
+      const newDate = new Date(date)
+      newDate.setFullYear(currentYear)
+      newDate.setMonth(currentMonth)
+      newDate.setDate(day)
+      setDate(newDate)
+      setSelectedDay(day)
+    }
+  }
+
+  // Navigate to previous month
+  const goToPreviousMonth = () => {
+    if (currentMonth === 0) {
+      setCurrentMonth(11)
+      setCurrentYear(currentYear - 1)
+    } else {
+      setCurrentMonth(currentMonth - 1)
+    }
+  }
+
+  // Navigate to next month
+  const goToNextMonth = () => {
+    if (currentMonth === 11) {
+      setCurrentMonth(0)
+      setCurrentYear(currentYear + 1)
+    } else {
+      setCurrentMonth(currentMonth + 1)
+    }
+  }
+
+  // Handle time selection
+  const handleTimeSelection = (hours: number, minutes: number) => {
+    const newTime = new Date(isStartTime ? startTime : endTime)
+    newTime.setHours(hours)
+    newTime.setMinutes(minutes)
+
+    if (isStartTime) {
+      setStartTime(newTime)
+
+      // Ensure end time is after start time
+      if (newTime > endTime) {
+        const newEndTime = new Date(newTime)
+        newEndTime.setHours(newTime.getHours() + 1)
+        setEndTime(newEndTime)
+      }
+    } else {
+      // Ensure end time is after start time
+      if (newTime < startTime) {
+        newTime.setDate(newTime.getDate() + 1)
+      }
+      setEndTime(newTime)
+    }
+  }
+
+  // Generate hours for time picker
+  const generateHours = () => {
+    const hours = []
+    for (let i = 0; i < 24; i++) {
+      const displayHour = i % 12 || 12
+      const ampm = i >= 12 ? "PM" : "AM"
+      hours.push({ value: i, display: `${displayHour} ${ampm}` })
+    }
+    return hours
+  }
+
+  // Generate minutes for time picker
+  const generateMinutes = () => {
+    const minutes = []
+    for (let i = 0; i < 60; i += 5) {
+      minutes.push({ value: i, display: i.toString().padStart(2, "0") })
+    }
+    return minutes
+  }
+
   // Get visible tags (first 6 if not showing all)
   const visibleTags = showAllTags ? TAGS : TAGS.slice(0, 6)
+
+  // Format time values for input elements
+  const getTimeInputValue = (date: Date) => {
+    try {
+      return `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`
+    } catch (error) {
+      console.error("Error formatting time for input:", error)
+      return "00:00"
+    }
+  }
+
+  // Format date value for input element
+  const getDateInputValue = (date: Date) => {
+    try {
+      return date.toISOString().split("T")[0]
+    } catch (error) {
+      console.error("Error formatting date for input:", error)
+      return new Date().toISOString().split("T")[0]
+    }
+  }
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
@@ -120,7 +312,7 @@ const AddTaskScreen = () => {
             <Switch
               value={withPartner}
               onValueChange={setWithPartner}
-              trackColor={{ false: "#767577", true: theme.colors.coupleActivity }}
+              trackColor={{ false: "#767577", true: theme.colors.coupleActivity || "#f4f3f4" }}
               thumbColor={withPartner ? theme.colors.primary : "#f4f3f4"}
             />
           </View>
@@ -148,30 +340,75 @@ const AddTaskScreen = () => {
             </View>
           </TouchableOpacity>
 
-          {showDatePicker && (
+          <Modal
+            visible={showDatePicker}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setShowDatePicker(false)}
+          >
             <View style={styles.datePickerContainer}>
               <TouchableOpacity style={styles.datePickerBackdrop} onPress={() => setShowDatePicker(false)} />
               <View style={[styles.datePickerContent, { backgroundColor: theme.colors.card }]}>
                 <Text style={[styles.datePickerTitle, { color: theme.colors.text }]}>Select Date</Text>
-                <input
-                  type="date"
-                  value={date.toISOString().split("T")[0]}
-                  onChange={(e) => {
-                    const newDate = new Date(e.target.value)
-                    setDate(newDate)
-                    setShowDatePicker(false)
-                  }}
-                  style={{
-                    fontSize: 16,
-                    padding: 10,
-                    borderRadius: 8,
-                    border: `1px solid ${theme.colors.border}`,
-                    backgroundColor: theme.colors.background,
-                    color: theme.colors.text,
-                    width: "100%",
-                    marginBottom: 10,
-                  }}
-                />
+
+                {/* Calendar header */}
+                <View style={styles.calendarHeader}>
+                  <TouchableOpacity onPress={goToPreviousMonth}>
+                    <Ionicons name="chevron-back" size={24} color={theme.colors.primary} />
+                  </TouchableOpacity>
+                  <Text style={[styles.calendarMonthYear, { color: theme.colors.text }]}>
+                    {MONTHS[currentMonth]} {currentYear}
+                  </Text>
+                  <TouchableOpacity onPress={goToNextMonth}>
+                    <Ionicons name="chevron-forward" size={24} color={theme.colors.primary} />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Days of week */}
+                <View style={styles.calendarDaysOfWeek}>
+                  {DAYS.map((day, index) => (
+                    <Text key={index} style={[styles.calendarDayOfWeek, { color: theme.colors.secondaryText }]}>
+                      {day}
+                    </Text>
+                  ))}
+                </View>
+
+                {/* Calendar days */}
+                <View style={styles.calendarDays}>
+                  {generateCalendarDays().map((item, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={[
+                        styles.calendarDay,
+                        item.isCurrentMonth &&
+                          item.day === selectedDay &&
+                          currentMonth === date.getMonth() &&
+                          currentYear === date.getFullYear() && {
+                            backgroundColor: theme.colors.primary,
+                            borderRadius: 20,
+                          },
+                      ]}
+                      onPress={() => item.isCurrentMonth && handleDateSelection(item.day)}
+                      disabled={!item.isCurrentMonth}
+                    >
+                      <Text
+                        style={[
+                          styles.calendarDayText,
+                          { color: item.isCurrentMonth ? theme.colors.text : "transparent" },
+                          item.isCurrentMonth &&
+                            item.day === selectedDay &&
+                            currentMonth === date.getMonth() &&
+                            currentYear === date.getFullYear() && {
+                              color: "#FFFFFF",
+                            },
+                        ]}
+                      >
+                        {item.day}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
                 <TouchableOpacity
                   style={[styles.datePickerButton, { backgroundColor: theme.colors.primary }]}
                   onPress={() => setShowDatePicker(false)}
@@ -180,7 +417,7 @@ const AddTaskScreen = () => {
                 </TouchableOpacity>
               </View>
             </View>
-          )}
+          </Modal>
 
           <Input
             label="Location"
@@ -193,7 +430,12 @@ const AddTaskScreen = () => {
           <View style={styles.timeSelectionRow}>
             <TouchableOpacity
               style={[styles.timeSelector, { borderColor: theme.colors.border }]}
-              onPress={() => setShowStartTimePicker(true)}
+              onPress={() => {
+                setIsStartTime(true)
+                setSelectedHours(startTime.getHours())
+                setSelectedMinutes(startTime.getMinutes())
+                setShowStartTimePicker(true)
+              }}
             >
               <Text style={[styles.timeSelectorLabel, { color: theme.colors.text }]}>Start Time</Text>
               <View style={styles.timeValue}>
@@ -204,7 +446,12 @@ const AddTaskScreen = () => {
 
             <TouchableOpacity
               style={[styles.timeSelector, { borderColor: theme.colors.border }]}
-              onPress={() => setShowEndTimePicker(true)}
+              onPress={() => {
+                setIsStartTime(false)
+                setSelectedHours(endTime.getHours())
+                setSelectedMinutes(endTime.getMinutes())
+                setShowEndTimePicker(true)
+              }}
             >
               <Text style={[styles.timeSelectorLabel, { color: theme.colors.text }]}>End Time</Text>
               <View style={styles.timeValue}>
@@ -214,87 +461,107 @@ const AddTaskScreen = () => {
             </TouchableOpacity>
           </View>
 
-          {showStartTimePicker && (
+          <Modal
+            visible={showStartTimePicker || showEndTimePicker}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => {
+              setShowStartTimePicker(false)
+              setShowEndTimePicker(false)
+            }}
+          >
             <View style={styles.datePickerContainer}>
-              <TouchableOpacity style={styles.datePickerBackdrop} onPress={() => setShowStartTimePicker(false)} />
+              <TouchableOpacity
+                style={styles.datePickerBackdrop}
+                onPress={() => {
+                  setShowStartTimePicker(false)
+                  setShowEndTimePicker(false)
+                }}
+              />
               <View style={[styles.datePickerContent, { backgroundColor: theme.colors.card }]}>
-                <Text style={[styles.datePickerTitle, { color: theme.colors.text }]}>Select Start Time</Text>
-                <input
-                  type="time"
-                  value={`${startTime.getHours().toString().padStart(2, "0")}:${startTime.getMinutes().toString().padStart(2, "0")}`}
-                  onChange={(e) => {
-                    const [hours, minutes] = e.target.value.split(":").map(Number)
-                    const newTime = new Date(startTime)
-                    newTime.setHours(hours)
-                    newTime.setMinutes(minutes)
-                    setStartTime(newTime)
+                <Text style={[styles.datePickerTitle, { color: theme.colors.text }]}>
+                  {isStartTime ? "Select Start Time" : "Select End Time"}
+                </Text>
 
-                    // Ensure end time is after start time
-                    if (newTime > endTime) {
-                      const newEndTime = new Date(newTime)
-                      newEndTime.setHours(newTime.getHours() + 1)
-                      setEndTime(newEndTime)
-                    }
+                <View style={styles.timePickerContainer}>
+                  {/* Hours */}
+                  <View style={styles.timePickerColumn}>
+                    <Text style={[styles.timePickerLabel, { color: theme.colors.secondaryText }]}>Hour</Text>
+                    <ScrollView style={styles.timePickerScroll}>
+                      {generateHours().map((hour, index) => (
+                        <TouchableOpacity
+                          key={index}
+                          style={[
+                            styles.timePickerItem,
+                            selectedHours === hour.value && {
+                              backgroundColor: `${theme.colors.primary}20`,
+                            },
+                          ]}
+                          onPress={() => setSelectedHours(hour.value)}
+                        >
+                          <Text
+                            style={[
+                              styles.timePickerItemText,
+                              { color: theme.colors.text },
+                              selectedHours === hour.value && {
+                                color: theme.colors.primary,
+                                fontFamily: "Poppins-SemiBold",
+                              },
+                            ]}
+                          >
+                            {hour.display}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
 
-                    setShowStartTimePicker(false)
-                  }}
-                  style={{
-                    fontSize: 16,
-                    padding: 10,
-                    borderRadius: 8,
-                    border: `1px solid ${theme.colors.border}`,
-                    backgroundColor: theme.colors.background,
-                    color: theme.colors.text,
-                    width: "100%",
-                    marginBottom: 10,
-                  }}
-                />
+                  {/* Minutes */}
+                  <View style={styles.timePickerColumn}>
+                    <Text style={[styles.timePickerLabel, { color: theme.colors.secondaryText }]}>Minute</Text>
+                    <ScrollView style={styles.timePickerScroll}>
+                      {generateMinutes().map((minute, index) => (
+                        <TouchableOpacity
+                          key={index}
+                          style={[
+                            styles.timePickerItem,
+                            selectedMinutes === minute.value && {
+                              backgroundColor: `${theme.colors.primary}20`,
+                            },
+                          ]}
+                          onPress={() => setSelectedMinutes(minute.value)}
+                        >
+                          <Text
+                            style={[
+                              styles.timePickerItemText,
+                              { color: theme.colors.text },
+                              selectedMinutes === minute.value && {
+                                color: theme.colors.primary,
+                                fontFamily: "Poppins-SemiBold",
+                              },
+                            ]}
+                          >
+                            {minute.display}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                </View>
+
                 <TouchableOpacity
                   style={[styles.datePickerButton, { backgroundColor: theme.colors.primary }]}
-                  onPress={() => setShowStartTimePicker(false)}
-                >
-                  <Text style={styles.datePickerButtonText}>Done</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-
-          {showEndTimePicker && (
-            <View style={styles.datePickerContainer}>
-              <TouchableOpacity style={styles.datePickerBackdrop} onPress={() => setShowEndTimePicker(false)} />
-              <View style={[styles.datePickerContent, { backgroundColor: theme.colors.card }]}>
-                <Text style={[styles.datePickerTitle, { color: theme.colors.text }]}>Select End Time</Text>
-                <input
-                  type="time"
-                  value={`${endTime.getHours().toString().padStart(2, "0")}:${endTime.getMinutes().toString().padStart(2, "0")}`}
-                  onChange={(e) => {
-                    const [hours, minutes] = e.target.value.split(":").map(Number)
-                    const newTime = new Date(endTime)
-                    newTime.setHours(hours)
-                    newTime.setMinutes(minutes)
-                    setEndTime(newTime)
+                  onPress={() => {
+                    handleTimeSelection(selectedHours, selectedMinutes)
+                    setShowStartTimePicker(false)
                     setShowEndTimePicker(false)
                   }}
-                  style={{
-                    fontSize: 16,
-                    padding: 10,
-                    borderRadius: 8,
-                    border: `1px solid ${theme.colors.border}`,
-                    backgroundColor: theme.colors.background,
-                    color: theme.colors.text,
-                    width: "100%",
-                    marginBottom: 10,
-                  }}
-                />
-                <TouchableOpacity
-                  style={[styles.datePickerButton, { backgroundColor: theme.colors.primary }]}
-                  onPress={() => setShowEndTimePicker(false)}
                 >
                   <Text style={styles.datePickerButtonText}>Done</Text>
                 </TouchableOpacity>
               </View>
             </View>
-          )}
+          </Modal>
 
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Add Tag</Text>
 
@@ -303,7 +570,7 @@ const AddTaskScreen = () => {
 
             {!showAllTags && (
               <TouchableOpacity style={styles.showMoreTags} onPress={() => setShowAllTags(true)}>
-                <Text style={[styles.showMoreTagsText, { color: theme.colors.primary }]}>เพิ่มเติม</Text>
+                <Text style={[styles.showMoreTagsText, { color: theme.colors.primary }]}>More...</Text>
                 <Ionicons name="chevron-forward" size={16} color={theme.colors.primary} />
               </TouchableOpacity>
             )}
@@ -536,6 +803,69 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Poppins-Medium",
     marginRight: 5,
+  },
+  calendarHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  calendarMonthYear: {
+    fontSize: 16,
+    fontFamily: "Poppins-SemiBold",
+  },
+  calendarDaysOfWeek: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  calendarDayOfWeek: {
+    width: 35,
+    textAlign: "center",
+    fontSize: 12,
+    fontFamily: "Poppins-Medium",
+  },
+  calendarDays: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginBottom: 20,
+  },
+  calendarDay: {
+    width: 35,
+    height: 35,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 5,
+  },
+  calendarDayText: {
+    fontSize: 14,
+    fontFamily: "Poppins-Regular",
+  },
+  timePickerContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 20,
+  },
+  timePickerColumn: {
+    width: "48%",
+  },
+  timePickerLabel: {
+    fontSize: 14,
+    fontFamily: "Poppins-Medium",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  timePickerScroll: {
+    height: 200,
+  },
+  timePickerItem: {
+    padding: 10,
+    borderRadius: 8,
+  },
+  timePickerItemText: {
+    fontSize: 14,
+    fontFamily: "Poppins-Regular",
+    textAlign: "center",
   },
 })
 
