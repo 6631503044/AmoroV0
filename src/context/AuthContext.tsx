@@ -8,18 +8,40 @@ type User = {
   id: string
   email: string
   displayName: string
+  username?: string
+  birthday?: string
+  hobbies?: string
+  phone?: string
   photoURL?: string
   partnerId?: string
+}
+
+type UpdateProfileParams = {
+  displayName?: string
+  username?: string
+  birthday?: string
+  hobbies?: string
+  phone?: string
+  photoURL?: string
 }
 
 type AuthContextType = {
   user: User | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<void>
-  signUp: (email: string, password: string, displayName: string) => Promise<void>
+  signUp: (
+    email: string,
+    password: string,
+    displayName: string,
+    username?: string,
+    birthday?: string,
+    hobbies?: string,
+    phone?: string,
+  ) => Promise<void>
   signOut: () => Promise<void>
   signInWithGoogle: () => Promise<void>
   signInWithApple: () => Promise<void>
+  updateProfile?: (params: UpdateProfileParams) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -76,7 +98,15 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     }
   }
 
-  const signUp = async (email: string, password: string, displayName: string) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    displayName: string,
+    username?: string,
+    birthday?: string,
+    hobbies?: string,
+    phone?: string,
+  ) => {
     try {
       setLoading(true)
       // Mock registration
@@ -84,6 +114,10 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         id: "123",
         email,
         displayName,
+        username,
+        birthday,
+        hobbies,
+        phone,
         photoURL: "https://via.placeholder.com/150",
       }
 
@@ -152,6 +186,27 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     }
   }
 
+  const updateProfile = async (params: UpdateProfileParams) => {
+    try {
+      setLoading(true)
+      if (!user) throw new Error("No user logged in")
+
+      // Update user object
+      const updatedUser = { ...user, ...params }
+
+      // Save to storage
+      await AsyncStorage.setItem("user", JSON.stringify(updatedUser))
+
+      // Update state
+      setUser(updatedUser)
+    } catch (error) {
+      console.error("Profile update failed:", error)
+      throw error
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const value = {
     user,
     loading,
@@ -160,6 +215,7 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     signOut,
     signInWithGoogle,
     signInWithApple,
+    updateProfile,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

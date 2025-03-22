@@ -16,6 +16,7 @@ import ChangePasswordScreen from "../screens/ChangePasswordScreen"
 import ResetPasswordEmailScreen from "../screens/ResetPasswordEmailScreen"
 import PermissionsScreen from "../screens/PermissionsScreen"
 import AmoroIntroScreen from "../screens/AmoroIntroScreen"
+import AddPartnerScreen from "../screens/AddPartnerScreen"
 
 // Define the RootStackParamList to properly type the navigation
 export type RootStackParamList = {
@@ -34,6 +35,7 @@ export type RootStackParamList = {
   AppSettings: undefined
   ChangePassword: undefined
   Permissions: undefined
+  AddPartner: undefined
 }
 
 const Stack = createStackNavigator<RootStackParamList>()
@@ -47,7 +49,6 @@ const RootNavigator = () => {
         <>
           <Stack.Screen name="AmoroIntro" component={AmoroIntroScreen} />
           <Stack.Screen name="Auth" component={AuthStack} />
-          <Stack.Screen name="ResetPasswordEmail" component={ResetPasswordEmailScreen} />
         </>
       ) : (
         <>
@@ -62,7 +63,9 @@ const RootNavigator = () => {
           <Stack.Screen name="AccountSettings" component={AccountSettingsScreen} />
           <Stack.Screen name="AppSettings" component={AppSettingsScreen} />
           <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+          <Stack.Screen name="ResetPasswordEmail" component={ResetPasswordEmailScreen} />
           <Stack.Screen name="Permissions" component={PermissionsScreen} />
+          <Stack.Screen name="AddPartner" component={AddPartnerScreen} />
         </>
       )}
     </Stack.Navigator>

@@ -19,9 +19,13 @@ import { useAuth } from "../context/AuthContext"
 import Input from "../components/Input"
 import Button from "../components/Button"
 import SocialButton from "../components/SocialButton"
+// Import the RootStackParamList type
+import type { RootStackParamList } from "../navigation/RootNavigator"
+import type { StackNavigationProp } from "@react-navigation/stack"
 
 const LoginScreen = () => {
-  const navigation = useNavigation()
+  // Then use this type for navigation
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>()
   const { theme } = useTheme()
   const { signIn, signInWithGoogle, signInWithApple, loading } = useAuth()
 
@@ -85,12 +89,7 @@ const LoginScreen = () => {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView contentContainerStyle={[styles.container, { backgroundColor: theme.colors.background }]}>
         <View style={styles.logoContainer}>
-      
-<View style={[styles.logo, { backgroundColor: theme.colors.primary }]}>
-  <Text style={{ color: 'white', fontSize: 32, fontWeight: 'bold' }}>A</Text>
-</View>
-
-
+          <Image source={require("../../assets/Thatsnotme.png")} style={styles.logo} resizeMode="contain" />
           <Text style={[styles.appName, { color: theme.colors.primary }]}>Amoro</Text>
           <Text style={[styles.tagline, { color: theme.colors.secondaryText }]}>Calendar for Couples</Text>
         </View>
@@ -161,7 +160,7 @@ const LoginScreen = () => {
 
           <View style={styles.signupContainer}>
             <Text style={[styles.signupText, { color: theme.colors.text }]}>Don't have an account?</Text>
-            <TouchableOpacity onPress={() => navigation.navigate("Signup" as never)}>
+            <TouchableOpacity onPress={() => navigation.navigate("Signup")}>
               <Text style={[styles.signupLink, { color: theme.colors.primary }]}>Sign Up</Text>
             </TouchableOpacity>
           </View>
@@ -180,6 +179,11 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: "center",
     marginBottom: 40,
+  },
+  logo: {
+    width: 100,
+    height: 100,
+    marginBottom: 10,
   },
   appName: {
     fontSize: 32,
@@ -228,14 +232,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Poppins-SemiBold",
     marginLeft: 5,
-  },
-  logo: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 10,
   },
 })
 

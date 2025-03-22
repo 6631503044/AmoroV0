@@ -1,6 +1,7 @@
 "use client"
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Switch, Alert } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Switch, Modal } from "react-native"
 import { useState } from "react"
+
 import { useNavigation } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "../context/ThemeContext"
@@ -13,6 +14,18 @@ const LANGUAGES = [
   { id: "fr", name: "French" },
 ]
 
+// Mock invitation data
+const MOCK_INVITATION = {
+  id: "1",
+  sender: {
+    id: "456",
+    name: "Jane Doe",
+    photoURL: "../../assets/JaneDoe.png",
+  },
+  message: "{name} would like to be your partner",
+  timestamp: new Date().toISOString(),
+}
+
 const ProfileScreen = () => {
   const navigation = useNavigation()
   const { theme, toggleTheme } = useTheme()
@@ -20,6 +33,11 @@ const ProfileScreen = () => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true)
   const [selectedLanguage, setSelectedLanguage] = useState("en")
   const [showLanguages, setShowLanguages] = useState(false)
+  const [showInvitations, setShowInvitations] = useState(false)
+
+  // For demo purposes, let's assume we have an invitation
+  const [hasInvitation, setHasInvitation] = useState(true)
+  const [invitation, setInvitation] = useState(MOCK_INVITATION)
 
   const handleSignOut = async () => {
     try {
@@ -45,32 +63,29 @@ const ProfileScreen = () => {
     navigation.navigate("ChangePassword" as never)
   }
 
-  const addPartner = () => {
-    // Navigate to add partner screen
+  const navigateToAddPartner = () => {
     navigation.navigate("AddPartner" as never)
   }
 
-  const removePartner = () => {
-    Alert.alert(
-      "Remove Partner",
-      "Are you sure you want to remove your partner connection?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel"
-        },
-        {
-          text: "Remove",
-          style: "destructive",
-          onPress: () => {
-            // Here you would call your API to remove the partner
-            // For example: apiService.removePartner(user.id)
-            Alert.alert("Partner Removed", "Your partner connection has been removed.")
-            // You might want to refresh user data here
-          }
-        }
-      ]
-    )
+  const handleAcceptInvitation = () => {
+    // In a real app, you would make an API call to accept the invitation
+    // For demo purposes, we'll just update the local state
+    setHasInvitation(false)
+    setShowInvitations(false)
+
+    // Update the user object to include the partner
+    if (invitation) {
+      // This would be handled by your backend in a real app
+      console.log(`Accepted invitation from ${invitation.sender.name}`)
+    }
+  }
+
+  const handleRejectInvitation = () => {
+    // In a real app, you would make an API call to reject the invitation
+    // For demo purposes, we'll just update the local state
+    setHasInvitation(false)
+    setInvitation(null)
+    setShowInvitations(false)
   }
 
   return (
@@ -82,7 +97,7 @@ const ProfileScreen = () => {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.profileSection}>
           <Image
-            source={{ uri: user?.photoURL || "/placeholder.svg?height=150&width=150" }}
+            source={{ uri: user?.photoURL || "../../assets/JaneDoe.png" }}
             style={styles.profileImage}
           />
           <Text style={[styles.username, { color: theme.colors.text }]}>{user?.displayName || "User"}</Text>
@@ -101,35 +116,49 @@ const ProfileScreen = () => {
                 <Text style={[styles.partnerName, { color: theme.colors.text }]}>Jane Doe</Text>
               </View>
             </View>
-            <View style={styles.partnerActions}>
-              <TouchableOpacity 
-                style={styles.partnerActionButton}
-                onPress={removePartner}
-              >
-                <Ionicons name="close-circle-outline" size={22} color={theme.colors.error || "red"} />
-              </TouchableOpacity>
-              <Ionicons name="chevron-forward" size={24} color={theme.colors.secondaryText} />
-            </View>
+            <Ionicons name="chevron-forward" size={24} color={theme.colors.secondaryText} />
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
-            style={[styles.addPartnerSection, { backgroundColor: theme.colors.card }]}
-            onPress={addPartner}
+            style={[styles.partnerSection, { backgroundColor: theme.colors.card }]}
+            onPress={navigateToAddPartner}
           >
-            <View style={styles.addPartnerContent}>
+            <View style={styles.partnerInfo}>
               <View style={[styles.addPartnerIcon, { backgroundColor: `${theme.colors.primary}20` }]}>
-                <Ionicons name="person-add-outline" size={24} color={theme.colors.primary} />
+                <Ionicons name="person-add" size={24} color={theme.colors.primary} />
               </View>
               <View>
-                <Text style={[styles.addPartnerTitle, { color: theme.colors.text }]}>Add a Partner</Text>
-                <Text style={[styles.addPartnerDescription, { color: theme.colors.secondaryText }]}>
-                  Connect with your partner to share experiences
+                <Text style={[styles.partnerName, { color: theme.colors.text }]}>Add Partner</Text>
+                <Text style={[styles.partnerLabel, { color: theme.colors.secondaryText }]}>
+                  Connect with your partner
                 </Text>
               </View>
             </View>
             <Ionicons name="chevron-forward" size={24} color={theme.colors.secondaryText} />
           </TouchableOpacity>
         )}
+
+        <TouchableOpacity
+          style={[styles.partnerSection, { backgroundColor: theme.colors.card, marginTop: 10 }]}
+          onPress={() => setShowInvitations(true)}
+        >
+          <View style={styles.partnerInfo}>
+            <View style={[styles.addPartnerIcon, { backgroundColor: `${theme.colors.primary}20` }]}>
+              <Ionicons name="mail" size={24} color={theme.colors.primary} />
+            </View>
+            <View>
+              <Text style={[styles.partnerName, { color: theme.colors.text }]}>Invitations</Text>
+              <Text style={[styles.partnerLabel, { color: theme.colors.secondaryText }]}>
+                {hasInvitation ? "You have a new invitation" : "No new invitations"}
+              </Text>
+            </View>
+          </View>
+          {hasInvitation && (
+            <View style={styles.notificationBadge}>
+              <Text style={styles.notificationText}>1</Text>
+            </View>
+          )}
+        </TouchableOpacity>
 
         <View style={styles.settingsSection}>
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Account</Text>
@@ -262,6 +291,61 @@ const ProfileScreen = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Invitations Modal */}
+      <Modal
+        visible={showInvitations}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowInvitations(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.colors.card }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Partner Invitations</Text>
+              <TouchableOpacity onPress={() => setShowInvitations(false)}>
+                <Ionicons name="close" size={24} color={theme.colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            {hasInvitation && invitation ? (
+              <View style={styles.invitationContainer}>
+                <Image source={{ uri: invitation.sender.photoURL }} style={styles.invitationImage} />
+                <Text style={[styles.invitationMessage, { color: theme.colors.text }]}>{invitation.message}</Text>
+
+                <View style={styles.invitationButtons}>
+                  <TouchableOpacity
+                    style={[styles.rejectButton, { borderColor: theme.colors.border }]}
+                    onPress={handleRejectInvitation}
+                  >
+                    <Text style={[styles.rejectButtonText, { color: theme.colors.text }]}>Reject</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.acceptButton, { backgroundColor: theme.colors.primary }]}
+                    onPress={handleAcceptInvitation}
+                  >
+                    <Text style={styles.acceptButtonText}>Accept</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.noInvitationsContainer}>
+                <Ionicons name="mail-outline" size={60} color={theme.colors.secondaryText} />
+                <Text style={[styles.noInvitationsText, { color: theme.colors.text }]}>
+                  You don't have any invitations yet
+                </Text>
+                <TouchableOpacity
+                  style={[styles.closeButton, { backgroundColor: theme.colors.primary }]}
+                  onPress={() => setShowInvitations(false)}
+                >
+                  <Text style={styles.closeButtonText}>Close</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   )
 }
@@ -309,7 +393,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     padding: 15,
     borderRadius: 12,
-    marginBottom: 30,
+    marginBottom: 10,
   },
   partnerInfo: {
     flexDirection: "row",
@@ -321,34 +405,6 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     marginRight: 15,
   },
-  partnerLabel: {
-    fontSize: 12,
-    fontFamily: "Poppins-Regular",
-  },
-  partnerName: {
-    fontSize: 16,
-    fontFamily: "Poppins-SemiBold",
-  },
-  partnerActions: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  partnerActionButton: {
-    marginRight: 10,
-    padding: 5,
-  },
-  addPartnerSection: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 30,
-  },
-  addPartnerContent: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
   addPartnerIcon: {
     width: 50,
     height: 50,
@@ -357,14 +413,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: 15,
   },
-  addPartnerTitle: {
-    fontSize: 16,
-    fontFamily: "Poppins-SemiBold",
-  },
-  addPartnerDescription: {
+  partnerLabel: {
     fontSize: 12,
     fontFamily: "Poppins-Regular",
-    maxWidth: 200,
+  },
+  partnerName: {
+    fontSize: 16,
+    fontFamily: "Poppins-SemiBold",
   },
   settingsSection: {
     marginBottom: 20,
@@ -434,6 +489,108 @@ const styles = StyleSheet.create({
     color: "red",
     marginLeft: 10,
   },
+  notificationBadge: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "red",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  notificationText: {
+    color: "white",
+    fontSize: 12,
+    fontFamily: "Poppins-Bold",
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
+    padding: 20,
+  },
+  modalContent: {
+    width: "90%",
+    borderRadius: 20,
+    padding: 20,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontFamily: "Poppins-SemiBold",
+  },
+  invitationContainer: {
+    alignItems: "center",
+    padding: 20,
+  },
+  invitationImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    marginBottom: 20,
+  },
+  invitationMessage: {
+    fontSize: 16,
+    fontFamily: "Poppins-Medium",
+    textAlign: "center",
+    marginBottom: 30,
+  },
+  invitationButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+  rejectButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    borderWidth: 1,
+    width: "45%",
+    alignItems: "center",
+  },
+  rejectButtonText: {
+    fontSize: 14,
+    fontFamily: "Poppins-Medium",
+  },
+  acceptButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    width: "45%",
+    alignItems: "center",
+  },
+  acceptButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontFamily: "Poppins-Medium",
+  },
+  noInvitationsContainer: {
+    alignItems: "center",
+    padding: 20,
+  },
+  noInvitationsText: {
+    fontSize: 16,
+    fontFamily: "Poppins-Medium",
+    textAlign: "center",
+    marginVertical: 20,
+  },
+  closeButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 25,
+    marginTop: 10,
+  },
+  closeButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontFamily: "Poppins-Medium",
+  },
 })
 
 export default ProfileScreen
+

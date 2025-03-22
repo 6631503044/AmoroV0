@@ -62,7 +62,7 @@ const ChangePasswordScreen = () => {
   }
 
   const navigateToResetPasswordEmail = () => {
-    navigation.navigate("ResetPasswordEmail" as never)
+    navigation.navigate("ResetPasswordEmail" as any)
   }
 
   return (

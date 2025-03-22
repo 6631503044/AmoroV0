@@ -1,19 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Image,
-  Alert,
-  Platform,
-  Modal,
-  TextInput,
-  FlatList,
-} from "react-native"
+import { useState } from "react"
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Modal, Alert } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "../context/ThemeContext"
@@ -21,161 +9,66 @@ import { useAuth } from "../context/AuthContext"
 import Input from "../components/Input"
 import Button from "../components/Button"
 
-// Sample avatar images that can be used without external dependencies
-const sampleAvatars = [
-  "https://randomuser.me/api/portraits/men/1.jpg",
-  "https://randomuser.me/api/portraits/women/1.jpg",
-  "https://randomuser.me/api/portraits/men/2.jpg",
-  "https://randomuser.me/api/portraits/women/2.jpg",
-  "https://randomuser.me/api/portraits/men/3.jpg",
-  "https://randomuser.me/api/portraits/women/3.jpg",
-  "https://randomuser.me/api/portraits/men/4.jpg",
-  "https://randomuser.me/api/portraits/women/4.jpg",
-]
-
 const AccountSettingsScreen = () => {
   const navigation = useNavigation()
   const { theme } = useTheme()
-  const { user, updateUserProfile } = useAuth()
+  const { user, updateProfile } = useAuth()
 
   const [name, setName] = useState(user?.displayName || "")
-  const [username, setUsername] = useState("@johndoe")
+  const [username, setUsername] = useState(user?.username || "@johndoe")
   const [email, setEmail] = useState(user?.email || "")
-  const [phone, setPhone] = useState("+1 234 567 8900")
-  const [birthday, setBirthday] = useState("1990-01-01")
-  const [hobbies, setHobbies] = useState("Reading, Hiking, Photography")
+  const [phone, setPhone] = useState(user?.phone || "+1 234 567 8900")
+  const [birthday, setBirthday] = useState(user?.birthday || "1990-01-01")
+  const [hobbies, setHobbies] = useState(user?.hobbies || "Reading, Hiking, Photography")
   const [loading, setLoading] = useState(false)
-  const [showDateModal, setShowDateModal] = useState(false)
-  const [showImageModal, setShowImageModal] = useState(false)
-  const [profileImage, setProfileImage] = useState(user?.photoURL || "https://randomuser.me/api/portraits/men/1.jpg")
-  const [customImageUrl, setCustomImageUrl] = useState("")
+  const [profileImage, setProfileImage] = useState(user?.photoURL || "/placeholder.svg?height=150&width=150")
+  const [showImagePicker, setShowImagePicker] = useState(false)
 
-  // Date picker state
-  const [selectedYear, setSelectedYear] = useState(1990)
-  const [selectedMonth, setSelectedMonth] = useState(1)
-  const [selectedDay, setSelectedDay] = useState(1)
-
-  // Initialize date picker values from birthday
-  useEffect(() => {
-    if (birthday) {
-      const [year, month, day] = birthday.split("-").map((num) => Number.parseInt(num, 10))
-      setSelectedYear(year)
-      setSelectedMonth(month)
-      setSelectedDay(day)
-    }
-  }, [birthday])
+  // Mock images for demo
+  const mockImages = [
+    "/placeholder.svg?height=150&width=150&text=Photo1",
+    "/placeholder.svg?height=150&width=150&text=Photo2",
+    "/placeholder.svg?height=150&width=150&text=Photo3",
+    "/placeholder.svg?height=150&width=150&text=Photo4",
+    "/placeholder.svg?height=150&width=150&text=Photo5",
+    "/placeholder.svg?height=150&width=150&text=Photo6",
+  ]
 
   const handleSave = async () => {
-    if (!name.trim()) {
-      Alert.alert("Error", "Please enter your full name")
-      return
-    }
-
-    if (!validateEmail(email)) {
-      Alert.alert("Error", "Please enter a valid email address")
-      return
-    }
-
     setLoading(true)
     try {
-      // In a real app, you would call your API here
+      // In a real app, you would update the user profile in your backend
+      // Here we're just simulating the API call
       await new Promise((resolve) => setTimeout(resolve, 1000))
 
-      // Update user profile in auth context
-      if (updateUserProfile) {
-        await updateUserProfile({
+      // Update the user profile in the context
+      if (updateProfile) {
+        await updateProfile({
           displayName: name,
-          email: email,
+          username,
+          phone,
+          birthday,
+          hobbies,
           photoURL: profileImage,
-          // Add other fields as needed
         })
       }
 
-      Alert.alert("Success", "Your profile has been updated successfully")
+      Alert.alert("Success", "Profile updated successfully")
       navigation.goBack()
     } catch (error) {
-      Alert.alert("Error", "Failed to update profile. Please try again.")
-      console.error("Profile update error:", error)
+      Alert.alert("Error", "Failed to update profile")
     } finally {
       setLoading(false)
     }
   }
 
-  const validateEmail = (email) => {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    return re.test(email)
-  }
-
   const handleChangeProfilePicture = () => {
-    setShowImageModal(true)
+    setShowImagePicker(true)
   }
 
-  const selectAvatar = (avatarUrl) => {
-    setProfileImage(avatarUrl)
-    setShowImageModal(false)
-  }
-
-  const handleCustomImageSubmit = () => {
-    if (customImageUrl.trim()) {
-      setProfileImage(customImageUrl)
-      setCustomImageUrl("")
-      setShowImageModal(false)
-    } else {
-      Alert.alert("Error", "Please enter a valid image URL")
-    }
-  }
-
-  const showDatePicker = () => {
-    setShowDateModal(true)
-  }
-
-  const hideDatePicker = () => {
-    setShowDateModal(false)
-  }
-
-  const confirmDate = () => {
-    const formattedMonth = selectedMonth.toString().padStart(2, "0")
-    const formattedDay = selectedDay.toString().padStart(2, "0")
-    setBirthday(`${selectedYear}-${formattedMonth}-${formattedDay}`)
-    hideDatePicker()
-  }
-
-  // Generate arrays for years, months, and days
-  const years = Array.from({ length: 100 }, (_, i) => new Date().getFullYear() - i)
-  const months = Array.from({ length: 12 }, (_, i) => i + 1)
-  const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate()
-  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1)
-
-  // Custom picker wheel component
-  const PickerWheel = ({ data, selectedValue, onValueChange, label }) => {
-    return (
-      <View style={styles.pickerWheelContainer}>
-        <Text style={styles.pickerLabel}>{label}</Text>
-        <ScrollView
-          style={styles.pickerWheel}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingVertical: 80 }}
-        >
-          {data.map((item) => (
-            <TouchableOpacity
-              key={item}
-              style={[styles.pickerItem, selectedValue === item && styles.selectedPickerItem]}
-              onPress={() => onValueChange(item)}
-            >
-              <Text
-                style={[
-                  styles.pickerItemText,
-                  selectedValue === item && styles.selectedPickerItemText,
-                  { color: theme.colors.text },
-                ]}
-              >
-                {item}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-    )
+  const selectImage = (imageUri) => {
+    setProfileImage(imageUri)
+    setShowImagePicker(false)
   }
 
   return (
@@ -223,6 +116,8 @@ const AccountSettingsScreen = () => {
             placeholder="Enter your email"
             keyboardType="email-address"
             leftIcon={<Ionicons name="mail-outline" size={20} color={theme.colors.secondaryText} />}
+            editable={false}
+            style={{ opacity: 0.7 }}
           />
 
           <Input
@@ -234,16 +129,13 @@ const AccountSettingsScreen = () => {
             leftIcon={<Ionicons name="call-outline" size={20} color={theme.colors.secondaryText} />}
           />
 
-          <TouchableOpacity onPress={showDatePicker}>
-            <Input
-              label="Birthday"
-              value={birthday}
-              placeholder="YYYY-MM-DD"
-              leftIcon={<Ionicons name="calendar-outline" size={20} color={theme.colors.secondaryText} />}
-              editable={false}
-              rightIcon={<Ionicons name="chevron-down" size={20} color={theme.colors.secondaryText} />}
-            />
-          </TouchableOpacity>
+          <Input
+            label="Birthday"
+            value={birthday}
+            onChangeText={setBirthday}
+            placeholder="YYYY-MM-DD"
+            leftIcon={<Ionicons name="calendar-outline" size={20} color={theme.colors.secondaryText} />}
+          />
 
           <Input
             label="Hobbies"
@@ -264,80 +156,40 @@ const AccountSettingsScreen = () => {
         </View>
       </ScrollView>
 
-      {/* Custom Date Picker Modal */}
-      <Modal visible={showDateModal} transparent={true} animationType="slide" onRequestClose={hideDatePicker}>
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: theme.colors.background }]}>
-            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Select Birthday</Text>
-
-            <View style={styles.datePickerContainer}>
-              <PickerWheel data={years} selectedValue={selectedYear} onValueChange={setSelectedYear} label="Year" />
-              <PickerWheel data={months} selectedValue={selectedMonth} onValueChange={setSelectedMonth} label="Month" />
-              <PickerWheel data={days} selectedValue={selectedDay} onValueChange={setSelectedDay} label="Day" />
-            </View>
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity style={[styles.modalButton, styles.cancelButton]} onPress={hideDatePicker}>
-                <Text style={styles.modalButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.confirmButton, { backgroundColor: theme.colors.primary }]}
-                onPress={confirmDate}
-              >
-                <Text style={styles.modalButtonText}>Confirm</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
       {/* Image Picker Modal */}
       <Modal
-        visible={showImageModal}
+        visible={showImagePicker}
         transparent={true}
         animationType="slide"
-        onRequestClose={() => setShowImageModal(false)}
+        onRequestClose={() => setShowImagePicker(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: theme.colors.background }]}>
-            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Choose Profile Picture</Text>
-
-            <FlatList
-              data={sampleAvatars}
-              numColumns={4}
-              keyExtractor={(item) => item}
-              renderItem={({ item }) => (
-                <TouchableOpacity style={styles.avatarItem} onPress={() => selectAvatar(item)}>
-                  <Image source={{ uri: item }} style={styles.avatarImage} />
-                </TouchableOpacity>
-              )}
-              contentContainerStyle={styles.avatarGrid}
-            />
-
-            <View style={styles.customUrlContainer}>
-              <Text style={[styles.customUrlLabel, { color: theme.colors.text }]}>Or enter image URL:</Text>
-              <View style={styles.customUrlInputContainer}>
-                <TextInput
-                  style={[styles.customUrlInput, { color: theme.colors.text, borderColor: theme.colors.border }]}
-                  value={customImageUrl}
-                  onChangeText={setCustomImageUrl}
-                  placeholder="https://example.com/image.jpg"
-                  placeholderTextColor={theme.colors.secondaryText}
-                />
-                <TouchableOpacity
-                  style={[styles.customUrlButton, { backgroundColor: theme.colors.primary }]}
-                  onPress={handleCustomImageSubmit}
-                >
-                  <Text style={styles.customUrlButtonText}>Use</Text>
-                </TouchableOpacity>
-              </View>
+          <View style={[styles.modalContent, { backgroundColor: theme.colors.card }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Choose Profile Picture</Text>
+              <TouchableOpacity onPress={() => setShowImagePicker(false)}>
+                <Ionicons name="close" size={24} color={theme.colors.text} />
+              </TouchableOpacity>
             </View>
 
+            <ScrollView contentContainerStyle={styles.imageGrid}>
+              {mockImages.map((image, index) => (
+                <TouchableOpacity key={index} style={styles.imageItem} onPress={() => selectImage(image)}>
+                  <Image source={{ uri: image }} style={styles.galleryImage} />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
             <TouchableOpacity
-              style={[styles.modalButton, styles.cancelButton, { marginTop: 10 }]}
-              onPress={() => setShowImageModal(false)}
+              style={[styles.cameraOption, { backgroundColor: theme.colors.primary }]}
+              onPress={() => {
+                // In a real app, this would open the camera
+                Alert.alert("Camera", "This would open the camera in a real app")
+                setShowImagePicker(false)
+              }}
             >
-              <Text style={styles.modalButtonText}>Cancel</Text>
+              <Ionicons name="camera" size={24} color="#FFFFFF" style={styles.cameraIcon} />
+              <Text style={styles.cameraText}>Take Photo</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -389,7 +241,6 @@ const styles = StyleSheet.create({
   formSection: {
     marginBottom: 20,
   },
-  // Modal styles
   modalOverlay: {
     flex: 1,
     justifyContent: "flex-end",
@@ -399,114 +250,48 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
-    paddingBottom: Platform.OS === "ios" ? 40 : 20,
     maxHeight: "80%",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 20,
+    fontFamily: "Poppins-SemiBold",
   },
-  datePickerContainer: {
+  imageGrid: {
     flexDirection: "row",
+    flexWrap: "wrap",
     justifyContent: "space-between",
-    marginBottom: 20,
+    paddingBottom: 20,
   },
-  pickerWheelContainer: {
-    flex: 1,
-    alignItems: "center",
+  imageItem: {
+    width: "30%",
+    marginBottom: 15,
   },
-  pickerLabel: {
-    fontSize: 14,
-    marginBottom: 10,
-    fontWeight: "500",
-  },
-  pickerWheel: {
-    height: 160,
+  galleryImage: {
     width: "100%",
-  },
-  pickerItem: {
-    height: 40,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  selectedPickerItem: {
-    backgroundColor: "rgba(0,0,0,0.05)",
+    height: 100,
     borderRadius: 8,
   },
-  pickerItemText: {
-    fontSize: 16,
-  },
-  selectedPickerItemText: {
-    fontWeight: "bold",
-  },
-  modalButtons: {
+  cameraOption: {
     flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  modalButton: {
-    flex: 1,
-    height: 50,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 15,
     borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-    marginHorizontal: 5,
+    marginBottom: 20,
   },
-  cancelButton: {
-    backgroundColor: "#E0E0E0",
-  },
-  confirmButton: {
-    backgroundColor: "#007AFF",
-  },
-  modalButtonText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "white",
-  },
-  // Avatar picker styles
-  avatarGrid: {
-    paddingVertical: 10,
-  },
-  avatarItem: {
-    margin: 5,
-    borderRadius: 40,
-    overflow: "hidden",
-  },
-  avatarImage: {
-    width: 70,
-    height: 70,
-  },
-  customUrlContainer: {
-    marginTop: 15,
-    marginBottom: 10,
-  },
-  customUrlLabel: {
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  customUrlInputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  customUrlInput: {
-    flex: 1,
-    height: 45,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 10,
+  cameraIcon: {
     marginRight: 10,
   },
-  customUrlButton: {
-    height: 45,
-    paddingHorizontal: 15,
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  customUrlButtonText: {
-    color: "white",
-    fontWeight: "bold",
+  cameraText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontFamily: "Poppins-Medium",
   },
 })
 
