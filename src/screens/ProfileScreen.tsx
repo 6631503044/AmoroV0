@@ -1,5 +1,5 @@
 "use client"
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Switch } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Switch, Alert } from "react-native"
 import { useState } from "react"
 import { useNavigation } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
@@ -45,6 +45,34 @@ const ProfileScreen = () => {
     navigation.navigate("ChangePassword" as never)
   }
 
+  const addPartner = () => {
+    // Navigate to add partner screen
+    navigation.navigate("AddPartner" as never)
+  }
+
+  const removePartner = () => {
+    Alert.alert(
+      "Remove Partner",
+      "Are you sure you want to remove your partner connection?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Remove",
+          style: "destructive",
+          onPress: () => {
+            // Here you would call your API to remove the partner
+            // For example: apiService.removePartner(user.id)
+            Alert.alert("Partner Removed", "Your partner connection has been removed.")
+            // You might want to refresh user data here
+          }
+        }
+      ]
+    )
+  }
+
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={styles.header}>
@@ -61,7 +89,7 @@ const ProfileScreen = () => {
           <Text style={[styles.email, { color: theme.colors.secondaryText }]}>{user?.email || "user@example.com"}</Text>
         </View>
 
-        {user?.partnerId && (
+        {user?.partnerId ? (
           <TouchableOpacity
             style={[styles.partnerSection, { backgroundColor: theme.colors.card }]}
             onPress={navigateToPartnerSettings}
@@ -71,6 +99,32 @@ const ProfileScreen = () => {
               <View>
                 <Text style={[styles.partnerLabel, { color: theme.colors.secondaryText }]}>Your Partner</Text>
                 <Text style={[styles.partnerName, { color: theme.colors.text }]}>Jane Doe</Text>
+              </View>
+            </View>
+            <View style={styles.partnerActions}>
+              <TouchableOpacity 
+                style={styles.partnerActionButton}
+                onPress={removePartner}
+              >
+                <Ionicons name="close-circle-outline" size={22} color={theme.colors.error || "red"} />
+              </TouchableOpacity>
+              <Ionicons name="chevron-forward" size={24} color={theme.colors.secondaryText} />
+            </View>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={[styles.addPartnerSection, { backgroundColor: theme.colors.card }]}
+            onPress={addPartner}
+          >
+            <View style={styles.addPartnerContent}>
+              <View style={[styles.addPartnerIcon, { backgroundColor: `${theme.colors.primary}20` }]}>
+                <Ionicons name="person-add-outline" size={24} color={theme.colors.primary} />
+              </View>
+              <View>
+                <Text style={[styles.addPartnerTitle, { color: theme.colors.text }]}>Add a Partner</Text>
+                <Text style={[styles.addPartnerDescription, { color: theme.colors.secondaryText }]}>
+                  Connect with your partner to share experiences
+                </Text>
               </View>
             </View>
             <Ionicons name="chevron-forward" size={24} color={theme.colors.secondaryText} />
@@ -275,6 +329,43 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "Poppins-SemiBold",
   },
+  partnerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  partnerActionButton: {
+    marginRight: 10,
+    padding: 5,
+  },
+  addPartnerSection: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 30,
+  },
+  addPartnerContent: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  addPartnerIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 15,
+  },
+  addPartnerTitle: {
+    fontSize: 16,
+    fontFamily: "Poppins-SemiBold",
+  },
+  addPartnerDescription: {
+    fontSize: 12,
+    fontFamily: "Poppins-Regular",
+    maxWidth: 200,
+  },
   settingsSection: {
     marginBottom: 20,
   },
@@ -346,4 +437,3 @@ const styles = StyleSheet.create({
 })
 
 export default ProfileScreen
-
