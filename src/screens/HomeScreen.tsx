@@ -103,6 +103,38 @@ const HomeScreen = () => {
     navigation.navigate("ShowTask", { activityId })
   }
 
+  // Calendar theme configuration
+  const calendarTheme = {
+    calendarBackground: theme.colors.card,
+    textSectionTitleColor: theme.colors.text,
+    selectedDayBackgroundColor: theme.colors.primary,
+    selectedDayTextColor: "#ffffff",
+    todayTextColor: theme.colors.primary,
+    dayTextColor: theme.colors.text,
+    textDisabledColor: theme.colors.secondaryText,
+    dotColor: theme.colors.primary,
+    selectedDotColor: "#ffffff",
+    arrowColor: theme.colors.primary,
+    monthTextColor: theme.colors.text,
+    indicatorColor: theme.colors.primary,
+    textDayFontFamily: "Poppins-Regular",
+    textMonthFontFamily: "Poppins-SemiBold",
+    textDayHeaderFontFamily: "Poppins-Medium",
+    textDayFontSize: 14,
+    textMonthFontSize: 16,
+    textDayHeaderFontSize: 14,
+    'stylesheet.calendar.header': {
+      dayHeader: {
+        color: theme.colors.text,
+      },
+    },
+    'stylesheet.calendar.main': {
+      dayContainer: {
+        backgroundColor: theme.colors.card,
+      },
+    },
+  }
+
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={styles.header}>
@@ -111,25 +143,12 @@ const HomeScreen = () => {
 
       <ScrollView showsVerticalScrollIndicator={false}>
         <Calendar
-          theme={{
-            calendarBackground: theme.colors.card,
-            textSectionTitleColor: theme.colors.text,
-            selectedDayBackgroundColor: theme.colors.primary,
-            selectedDayTextColor: "#ffffff",
-            todayTextColor: theme.colors.primary,
-            dayTextColor: theme.colors.text,
-            textDisabledColor: theme.colors.secondaryText,
-            dotColor: theme.colors.primary,
-            selectedDotColor: "#ffffff",
-            arrowColor: theme.colors.primary,
-            monthTextColor: theme.colors.text,
-            indicatorColor: theme.colors.primary,
-          }}
+          theme={calendarTheme}
           markingType={"multi-dot"}
           markedDates={getMarkedDates()}
           onDayPress={(day) => setSelectedDate(day.dateString)}
           enableSwipeMonths={true}
-          style={styles.calendar}
+          style={[styles.calendar, { backgroundColor: theme.colors.card }]}
         />
 
         <View style={styles.dateSection}>

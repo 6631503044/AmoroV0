@@ -1,6 +1,6 @@
 "use client"
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Switch, Modal } from "react-native"
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 
 import { useNavigation } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
@@ -30,10 +30,17 @@ const ProfileScreen = () => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true)
   const [showLanguages, setShowLanguages] = useState(false)
   const [showInvitations, setShowInvitations] = useState(false)
+  const [selectedLocale, setSelectedLocale] = useState(locale)
+  const isInitialRender = useRef(true)
 
   // For demo purposes, let's assume we have an invitation
   const [hasInvitation, setHasInvitation] = useState(true)
   const [invitation, setInvitation] = useState<Invitation | undefined>(MOCK_INVITATION)
+
+  // Update selectedLocale when locale changes
+  useEffect(() => {
+    setSelectedLocale(locale)
+  }, [locale])
 
   const handleSignOut = async () => {
     try {
@@ -82,6 +89,18 @@ const ProfileScreen = () => {
     setHasInvitation(false)
     setInvitation(undefined)
     setShowInvitations(false)
+  }
+
+  // Direct language change handler - no alert, immediate effect
+  const handleLanguageChange = (langId: string) => {
+    // Update local state first for immediate UI feedback
+    setSelectedLocale(langId)
+    
+    // Close the dropdown immediately
+    setShowLanguages(false)
+    
+    // Update the context after UI update
+    setLocale(langId)
   }
 
   return (
@@ -220,7 +239,7 @@ const ProfileScreen = () => {
             </View>
             <View style={styles.languageSelector}>
               <Text style={[styles.languageText, { color: theme.colors.secondaryText }]}>
-                {LANGUAGES.find((lang) => lang.id === locale)?.name}
+                {LANGUAGES.find((lang) => lang.id === selectedLocale)?.name}
               </Text>
               <Ionicons
                 name={showLanguages ? "chevron-up" : "chevron-down"}
@@ -237,20 +256,18 @@ const ProfileScreen = () => {
                   key={lang.id}
                   style={[
                     styles.languageOption,
-                    locale === lang.id && {
+                    selectedLocale === lang.id && {
                       backgroundColor: `${theme.colors.primary}20`,
                     },
                   ]}
-                  onPress={() => {
-                    setLocale(lang.id)
-                    setShowLanguages(false)
-                  }}
+                  onPress={() => handleLanguageChange(lang.id)}
+                  activeOpacity={0.7}
                 >
                   <Text
                     style={[
                       styles.languageOptionText,
                       { color: theme.colors.text },
-                      locale === lang.id && {
+                      selectedLocale === lang.id && {
                         color: theme.colors.primary,
                         fontFamily: "Poppins-SemiBold",
                       },
@@ -258,7 +275,7 @@ const ProfileScreen = () => {
                   >
                     {lang.name}
                   </Text>
-                  {locale === lang.id && <Ionicons name="checkmark" size={20} color={theme.colors.primary} />}
+                  {selectedLocale === lang.id && <Ionicons name="checkmark" size={20} color={theme.colors.primary} />}
                 </TouchableOpacity>
               ))}
             </View>
