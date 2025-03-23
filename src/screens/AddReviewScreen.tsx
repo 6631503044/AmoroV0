@@ -5,15 +5,19 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 
 import { useNavigation, useRoute } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "../context/ThemeContext"
+import { useLanguage } from "../context/LanguageContext"
 
-// Mock activity data
+// Mock activity data with enhanced details
 const ACTIVITY = {
   id: "1",
   title: "Dinner at Italian Restaurant",
-  date: "2023-06-10",
+  date: "2023-06-10T19:30:00", // ISO format with time
   type: "couple",
   tag: "date",
   emoji: "🍝",
+  partnerId: "123", // Partner ID if it's a couple activity
+  partnerName: "Jane Doe", // Partner name
+  location: "Bella Italia, Downtown",
 }
 
 // Mood options
@@ -30,6 +34,7 @@ const AddReviewScreen = () => {
   const navigation = useNavigation()
   const route = useRoute()
   const { theme } = useTheme()
+  const { t, formatDate } = useLanguage()
 
   // In a real app, you would fetch the activity based on the ID from the route
   // const { activityId } = route.params;
@@ -74,7 +79,7 @@ const AddReviewScreen = () => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="close" size={24} color={theme.colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: theme.colors.text }]}>Add Review</Text>
+        <Text style={[styles.title, { color: theme.colors.text }]}>{t("addReview")}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -84,9 +89,32 @@ const AddReviewScreen = () => {
             <Text style={styles.emoji}>{activity.emoji}</Text>
           </View>
           <Text style={[styles.activityTitle, { color: theme.colors.text }]}>{activity.title}</Text>
+
+          {/* Date and time information */}
+          <Text style={[styles.activityDateTime, { color: theme.colors.secondaryText }]}>
+            {formatDate(activity.date, "dateTimeFormat")}
+          </Text>
+
+          {/* Location information */}
+          {activity.location && (
+            <View style={styles.locationContainer}>
+              <Ionicons name="location-outline" size={14} color={theme.colors.secondaryText} />
+              <Text style={[styles.locationText, { color: theme.colors.secondaryText }]}>{activity.location}</Text>
+            </View>
+          )}
+
+          {/* Partner information for couple activities */}
+          {activity.type === "couple" && activity.partnerName && (
+            <View style={[styles.partnerBadge, { backgroundColor: `${theme.colors.primary}15` }]}>
+              <Ionicons name="people-outline" size={14} color={theme.colors.primary} />
+              <Text style={[styles.partnerText, { color: theme.colors.primary }]}>
+                {t("with")} {activity.partnerName}
+              </Text>
+            </View>
+          )}
         </View>
 
-        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>How was your mood?</Text>
+        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t("howWasYourMood")}</Text>
 
         <View style={styles.moodSelector}>
           {MOODS.map((mood) => (
@@ -109,17 +137,17 @@ const AddReviewScreen = () => {
                   selectedMood === mood.id && { color: theme.colors.primary },
                 ]}
               >
-                {mood.name}
+                {t(`mood_${mood.name.toLowerCase()}`)}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>How was your experience?</Text>
+        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t("howWasYourExperience")}</Text>
 
         {renderRatingSelector()}
 
-        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Add a note (optional)</Text>
+        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t("addNoteOptional")}</Text>
 
         <TextInput
           style={[
@@ -132,7 +160,7 @@ const AddReviewScreen = () => {
           ]}
           value={review}
           onChangeText={setReview}
-          placeholder="Share your thoughts about this activity..."
+          placeholder={t("shareYourThoughts")}
           placeholderTextColor={theme.colors.secondaryText}
           multiline
           numberOfLines={6}
@@ -143,7 +171,7 @@ const AddReviewScreen = () => {
           style={[styles.saveButtonLarge, { backgroundColor: theme.colors.primary }]}
           onPress={handleSave}
         >
-          <Text style={styles.saveButtonText}>Save Review</Text>
+          <Text style={styles.saveButtonText}>{t("saveReview")}</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -192,6 +220,36 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: "Poppins-SemiBold",
     textAlign: "center",
+    marginBottom: 8,
+  },
+  activityDateTime: {
+    fontSize: 14,
+    fontFamily: "Poppins-Regular",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  locationContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  locationText: {
+    fontSize: 13,
+    fontFamily: "Poppins-Regular",
+    marginLeft: 4,
+  },
+  partnerBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginTop: 4,
+  },
+  partnerText: {
+    fontSize: 13,
+    fontFamily: "Poppins-Medium",
+    marginLeft: 4,
   },
   sectionTitle: {
     fontSize: 16,

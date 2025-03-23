@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Modal } 
 import { useNavigation } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "../context/ThemeContext"
-import { format } from "date-fns"
+import { useLanguage } from "../context/LanguageContext"
 
 // Mock data for past activities
 const PAST_ACTIVITIES = [
@@ -94,6 +94,7 @@ type ActivityType = "all" | "single" | "couple"
 const MoodsScreen = () => {
   const navigation = useNavigation()
   const { theme } = useTheme()
+  const { t, formatDate } = useLanguage()
   const [timeFilter, setTimeFilter] = useState<FilterType>("day")
   const [typeFilter, setTypeFilter] = useState<ActivityType>("all")
   const [searchQuery, setSearchQuery] = useState("")
@@ -137,11 +138,11 @@ const MoodsScreen = () => {
           <View style={styles.activityDetails}>
             <Text style={[styles.activityTitle, { color: theme.colors.text }]}>{item.title}</Text>
             <Text style={[styles.activityDate, { color: theme.colors.secondaryText }]}>
-              {format(new Date(item.date), "MMMM d, yyyy")}
+              {formatDate(new Date(item.date), "dateFormat")}
             </Text>
             <View style={styles.tagContainer}>
               <Text style={[styles.tagText, { color: theme.colors.secondaryText }]}>
-                {item.type === "single" ? "Single" : "Partner"}
+                {item.type === "single" ? t("single") : t("partner")}
               </Text>
             </View>
           </View>
@@ -155,7 +156,7 @@ const MoodsScreen = () => {
               style={[styles.reviewButton, { backgroundColor: theme.colors.primary }]}
               onPress={() => navigation.navigate("AddReview" as never, { activityId: item.id } as never)}
             >
-              <Text style={styles.reviewButtonText}>Add Review</Text>
+              <Text style={styles.reviewButtonText}>{t("addReview")}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -166,7 +167,7 @@ const MoodsScreen = () => {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.colors.text }]}>Moods</Text>
+        <Text style={[styles.title, { color: theme.colors.text }]}>{t("moods")}</Text>
       </View>
 
       <View style={styles.searchAndFilterContainer}>
@@ -174,7 +175,7 @@ const MoodsScreen = () => {
           <Ionicons name="search" size={20} color={theme.colors.secondaryText} style={styles.searchIcon} />
           <TextInput
             style={[styles.searchInput, { color: theme.colors.text }]}
-            placeholder="Search activities..."
+            placeholder={t("searchActivities")}
             placeholderTextColor={theme.colors.secondaryText}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -208,7 +209,7 @@ const MoodsScreen = () => {
             ]}
           >
             <View style={styles.dropdownHeader}>
-              <Text style={[styles.dropdownTitle, { color: theme.colors.text }]}>Filter Activities</Text>
+              <Text style={[styles.dropdownTitle, { color: theme.colors.text }]}>{t("filterActivities")}</Text>
             </View>
 
             <TouchableOpacity
@@ -230,7 +231,7 @@ const MoodsScreen = () => {
                   { color: typeFilter === "all" ? theme.colors.primary : theme.colors.text },
                 ]}
               >
-                All Activities
+                {t("allActivities")}
               </Text>
               {typeFilter === "all" && (
                 <Ionicons name="checkmark" size={18} color={theme.colors.primary} style={styles.dropdownItemCheck} />
@@ -256,7 +257,7 @@ const MoodsScreen = () => {
                   { color: typeFilter === "single" ? theme.colors.primary : theme.colors.text },
                 ]}
               >
-                Single Activities
+                {t("singleActivities")}
               </Text>
               {typeFilter === "single" && (
                 <Ionicons name="checkmark" size={18} color={theme.colors.primary} style={styles.dropdownItemCheck} />
@@ -282,7 +283,7 @@ const MoodsScreen = () => {
                   { color: typeFilter === "couple" ? theme.colors.primary : theme.colors.text },
                 ]}
               >
-                Partner Activities
+                {t("partnerActivities")}
               </Text>
               {typeFilter === "couple" && (
                 <Ionicons name="checkmark" size={18} color={theme.colors.primary} style={styles.dropdownItemCheck} />
@@ -297,14 +298,14 @@ const MoodsScreen = () => {
                   setDropdownVisible(false)
                 }}
               >
-                <Text style={[styles.clearButtonText, { color: theme.colors.primary }]}>Clear Filter</Text>
+                <Text style={[styles.clearButtonText, { color: theme.colors.primary }]}>{t("clearFilter")}</Text>
               </TouchableOpacity>
             </View>
           </View>
         </TouchableOpacity>
       </Modal>
 
-      <Text style={[styles.subtitle, { color: theme.colors.secondaryText }]}>Review and rate your past activities</Text>
+      <Text style={[styles.subtitle, { color: theme.colors.secondaryText }]}>{t("reviewAndRate")}</Text>
 
       {/* Time filter (Day/Week/Month) */}
       <View style={styles.timeFilterContainer}>
@@ -313,7 +314,7 @@ const MoodsScreen = () => {
           onPress={() => setTimeFilter("day")}
         >
           <Text style={[styles.filterButtonText, { color: timeFilter === "day" ? "#FFFFFF" : theme.colors.text }]}>
-            Day
+            {t("day")}
           </Text>
         </TouchableOpacity>
 
@@ -322,7 +323,7 @@ const MoodsScreen = () => {
           onPress={() => setTimeFilter("week")}
         >
           <Text style={[styles.filterButtonText, { color: timeFilter === "week" ? "#FFFFFF" : theme.colors.text }]}>
-            Week
+            {t("week")}
           </Text>
         </TouchableOpacity>
 
@@ -331,7 +332,7 @@ const MoodsScreen = () => {
           onPress={() => setTimeFilter("month")}
         >
           <Text style={[styles.filterButtonText, { color: timeFilter === "month" ? "#FFFFFF" : theme.colors.text }]}>
-            Month
+            {t("month")}
           </Text>
         </TouchableOpacity>
       </View>
@@ -344,9 +345,7 @@ const MoodsScreen = () => {
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyText, { color: theme.colors.secondaryText }]}>
-              No activities found matching your filters
-            </Text>
+            <Text style={[styles.emptyText, { color: theme.colors.secondaryText }]}>{t("noActivitiesFound")}</Text>
           </View>
         }
       />

@@ -2,7 +2,7 @@
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "../context/ThemeContext"
-import { format } from "date-fns"
+import { useLanguage } from "../context/LanguageContext"
 import { useNavigation } from "@react-navigation/native"
 
 // Mock data for notifications
@@ -55,6 +55,7 @@ const NOTIFICATIONS = [
 
 const NotificationsScreen = () => {
   const { theme } = useTheme()
+  const { t, formatDate, getNotificationTitle, getNotificationMessage } = useLanguage()
   const navigation = useNavigation()
 
   const getNotificationIcon = (type: string) => {
@@ -78,11 +79,11 @@ const NotificationsScreen = () => {
     const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
 
     if (diffInMinutes < 60) {
-      return `${diffInMinutes} min ago`
+      return `${diffInMinutes} ${t("minAgo")}`
     } else if (diffInMinutes < 1440) {
-      return `${Math.floor(diffInMinutes / 60)} hours ago`
+      return `${Math.floor(diffInMinutes / 60)} ${t("hoursAgo")}`
     } else {
-      return format(date, "MMM d")
+      return formatDate(date, "shortDateFormat")
     }
   }
 
@@ -108,8 +109,12 @@ const NotificationsScreen = () => {
         </View>
 
         <View style={styles.notificationContent}>
-          <Text style={[styles.notificationTitle, { color: theme.colors.text }]}>{item.title}</Text>
-          <Text style={[styles.notificationMessage, { color: theme.colors.secondaryText }]}>{item.message}</Text>
+          <Text style={[styles.notificationTitle, { color: theme.colors.text }]}>
+            {getNotificationTitle(item.type, item.title)}
+          </Text>
+          <Text style={[styles.notificationMessage, { color: theme.colors.secondaryText }]}>
+            {getNotificationMessage(item.type, item.message)}
+          </Text>
           <Text style={[styles.notificationTime, { color: theme.colors.secondaryText }]}>{getTimeAgo(item.time)}</Text>
         </View>
       </TouchableOpacity>
@@ -119,7 +124,7 @@ const NotificationsScreen = () => {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.colors.text }]}>Notifications</Text>
+        <Text style={[styles.title, { color: theme.colors.text }]}>{t("notifications")}</Text>
       </View>
 
       {NOTIFICATIONS.length > 0 ? (
@@ -133,9 +138,9 @@ const NotificationsScreen = () => {
       ) : (
         <View style={styles.emptyState}>
           <Ionicons name="notifications-off-outline" size={60} color={theme.colors.secondaryText} />
-          <Text style={[styles.emptyStateTitle, { color: theme.colors.text }]}>No Notifications</Text>
+          <Text style={[styles.emptyStateTitle, { color: theme.colors.text }]}>{t("noNotifications")}</Text>
           <Text style={[styles.emptyStateText, { color: theme.colors.secondaryText }]}>
-            You don't have any notifications at the moment
+            {t("noNotificationsMessage")}
           </Text>
         </View>
       )}

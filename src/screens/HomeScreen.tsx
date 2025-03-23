@@ -6,8 +6,8 @@ import { useNavigation } from "@react-navigation/native"
 import { Calendar } from "react-native-calendars"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "../context/ThemeContext"
+import { useLanguage } from "../context/LanguageContext"
 import ActivityItem from "../components/ActivityItem"
-import { format } from "date-fns"
 
 // Mock data for activities
 const MOCK_ACTIVITIES = [
@@ -56,8 +56,9 @@ const MOCK_ACTIVITIES = [
 const HomeScreen = () => {
   const navigation = useNavigation()
   const { theme } = useTheme()
+  const { t, formatDate } = useLanguage()
   const today = new Date()
-  const [selectedDate, setSelectedDate] = useState(format(today, "yyyy-MM-dd"))
+  const [selectedDate, setSelectedDate] = useState(today.toISOString().split("T")[0]) // Format: YYYY-MM-DD
 
   // Fix the calendar dots issue by making the keys unique
   const getMarkedDates = () => {
@@ -105,7 +106,7 @@ const HomeScreen = () => {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.colors.text }]}>Amoro</Text>
+        <Text style={[styles.title, { color: theme.colors.text }]}>{t("homeTitle")}</Text>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -133,15 +134,15 @@ const HomeScreen = () => {
 
         <View style={styles.dateSection}>
           <Text style={[styles.selectedDate, { color: theme.colors.text }]}>
-            {format(new Date(selectedDate), "EEEE, MMMM d, yyyy")}
+            {formatDate(new Date(selectedDate), "dateFormat")}
           </Text>
         </View>
 
         <View style={styles.activitiesSection}>
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Activities</Text>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t("activities")}</Text>
             <TouchableOpacity onPress={handleViewAllActivities}>
-              <Text style={[styles.viewAll, { color: theme.colors.primary }]}>View All</Text>
+              <Text style={[styles.viewAll, { color: theme.colors.primary }]}>{t("viewAll")}</Text>
             </TouchableOpacity>
           </View>
 
@@ -154,9 +155,7 @@ const HomeScreen = () => {
             />
           ) : (
             <View style={styles.emptyState}>
-              <Text style={[styles.emptyStateText, { color: theme.colors.secondaryText }]}>
-                No activities for this day
-              </Text>
+              <Text style={[styles.emptyStateText, { color: theme.colors.secondaryText }]}>{t("noActivities")}</Text>
             </View>
           )}
         </View>
@@ -165,6 +164,7 @@ const HomeScreen = () => {
       <TouchableOpacity
         style={[styles.floatingButton, { backgroundColor: theme.colors.primary }]}
         onPress={handleAddActivity}
+        accessibilityLabel={t("addActivity")}
       >
         <Ionicons name="add" size={24} color="#FFFFFF" />
       </TouchableOpacity>
