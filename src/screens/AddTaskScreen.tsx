@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import {
   View,
   Text,
@@ -11,13 +11,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   Modal,
+  Animated,
 } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "../context/ThemeContext"
 import Input from "../components/Input"
 import Button from "../components/Button"
-import TagSelector from "../components/TagSelector"
 
 // Mock tags data
 const TAGS = [
@@ -63,6 +63,11 @@ const MONTHS = [
 const AddTaskScreen = () => {
   const navigation = useNavigation()
   const { theme } = useTheme()
+  const scrollViewRef = useRef<ScrollView>(null)
+  const [scrollPosition, setScrollPosition] = useState(0)
+  const [scrollViewWidth, setScrollViewWidth] = useState(0)
+  const [contentWidth, setContentWidth] = useState(0)
+  const fadeAnim = useRef(new Animated.Value(1)).current
 
   // Form state
   const [withPartner, setWithPartner] = useState(false)
@@ -74,7 +79,6 @@ const AddTaskScreen = () => {
   const [endTime, setEndTime] = useState(new Date(Date.now() + 60 * 60 * 1000)) // 1 hour later
   const [selectedTag, setSelectedTag] = useState<string | null>(null)
   const [notificationTime, setNotificationTime] = useState(NOTIFICATION_OPTIONS[2].value)
-  const [showAllTags, setShowAllTags] = useState(false)
 
   // UI state
   const [showDatePicker, setShowDatePicker] = useState(false)
@@ -94,6 +98,28 @@ const AddTaskScreen = () => {
 
   // UI state
   const [isMounted, setIsMounted] = useState(true)
+
+  // Pulse animation for scroll indicator
+  useEffect(() => {
+    const pulseAnimation = Animated.sequence([
+      Animated.timing(fadeAnim, {
+        toValue: 0.5,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+    ])
+
+    Animated.loop(pulseAnimation).start()
+
+    return () => {
+      fadeAnim.stopAnimation()
+    }
+  }, [fadeAnim])
 
   // Set isMounted to false when component unmounts
   useEffect(() => {
@@ -272,8 +298,54 @@ const AddTaskScreen = () => {
     return minutes
   }
 
-  // Get visible tags (first 6 if not showing all)
-  const visibleTags = showAllTags ? TAGS : TAGS.slice(0, 6)
+  // Handle scroll events for the tags ScrollView
+  const handleTagsScroll = (event) => {
+    const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent
+    setScrollPosition(contentOffset.x)
+    setScrollViewWidth(layoutMeasurement.width)
+    setContentWidth(contentSize.width)
+  }
+
+  // Calculate if we can scroll more to the right
+  const canScrollRight = contentWidth > scrollViewWidth && scrollPosition < contentWidth - scrollViewWidth
+
+  // Scroll to a specific section based on dot index
+  const scrollToSection = (dotIndex) => {
+    if (scrollViewRef.current && contentWidth > scrollViewWidth) {
+      const sectionWidth = (contentWidth - scrollViewWidth) / 2
+      let targetX = 0
+
+      if (dotIndex === 1) {
+        targetX = sectionWidth
+      } else if (dotIndex === 2) {
+        targetX = contentWidth - scrollViewWidth
+      }
+
+      scrollViewRef.current.scrollTo({ x: targetX, animated: true })
+    }
+  }
+
+  // Scroll to the next section
+  const scrollToNextSection = () => {
+    if (scrollViewRef.current && contentWidth > scrollViewWidth) {
+      const sectionWidth = (contentWidth - scrollViewWidth) / 2
+
+      // Determine which section we're currently in
+      let targetX = 0
+      if (scrollPosition < sectionWidth / 2) {
+        // We're in the first section, scroll to second
+        targetX = sectionWidth
+      } else if (scrollPosition < sectionWidth * 1.5) {
+        // We're in the second section, scroll to third
+        targetX = contentWidth - scrollViewWidth
+      } else {
+        // We're already at the end, loop back to start
+        targetX = 0
+      }
+
+      scrollViewRef.current.scrollTo({ x: targetX, animated: true })
+    }
+  }
 
   // Format time values for input elements
   const getTimeInputValue = (date: Date) => {
@@ -294,6 +366,18 @@ const AddTaskScreen = () => {
       return new Date().toISOString().split("T")[0]
     }
   }
+
+  // Get current active dot index based on scroll position
+  const getActiveDotIndex = () => {
+    if (contentWidth <= scrollViewWidth) return 0
+
+    const sectionWidth = (contentWidth - scrollViewWidth) / 2
+    if (scrollPosition < sectionWidth / 2) return 0
+    if (scrollPosition < sectionWidth * 1.5) return 1
+    return 2
+  }
+
+  const activeDotIndex = getActiveDotIndex()
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
@@ -565,14 +649,78 @@ const AddTaskScreen = () => {
 
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Add Tag</Text>
 
-          <View>
-            <TagSelector tags={visibleTags} selectedTagId={selectedTag} onSelectTag={setSelectedTag} />
+          <View style={styles.tagsContainer}>
+            <ScrollView
+              ref={scrollViewRef}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              onScroll={handleTagsScroll}
+              scrollEventThrottle={16}
+              style={styles.tagsScrollView}
+              contentContainerStyle={styles.tagsScrollViewContent}
+            >
+              {TAGS.map((tag) => (
+                <TouchableOpacity
+                  key={tag.id}
+                  style={[
+                    styles.tagItem,
+                    { borderColor: theme.colors.border },
+                    selectedTag === tag.id && {
+                      backgroundColor: `${theme.colors.primary}20`,
+                      borderColor: theme.colors.primary,
+                    },
+                  ]}
+                  onPress={() => setSelectedTag(tag.id === selectedTag ? null : tag.id)}
+                >
+                  <Text style={styles.tagEmoji}>{tag.emoji}</Text>
+                  <Text
+                    style={[
+                      styles.tagName,
+                      { color: theme.colors.text },
+                      selectedTag === tag.id && { color: theme.colors.primary },
+                    ]}
+                  >
+                    {tag.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
 
-            {!showAllTags && (
-              <TouchableOpacity style={styles.showMoreTags} onPress={() => setShowAllTags(true)}>
-                <Text style={[styles.showMoreTagsText, { color: theme.colors.primary }]}>More...</Text>
-                <Ionicons name="chevron-forward" size={16} color={theme.colors.primary} />
+            {/* Clickable scroll indicator arrow */}
+            {canScrollRight && (
+              <TouchableOpacity onPress={scrollToNextSection} activeOpacity={0.7} style={styles.scrollIndicatorButton}>
+                <Animated.View
+                  style={[styles.scrollIndicator, { opacity: fadeAnim, backgroundColor: theme.colors.primary }]}
+                >
+                  <Ionicons name="chevron-forward" size={16} color="#FFFFFF" />
+                </Animated.View>
               </TouchableOpacity>
+            )}
+
+            {/* Clickable scroll progress dots */}
+            {contentWidth > scrollViewWidth && (
+              <View style={styles.scrollProgressContainer}>
+                <View style={styles.scrollProgressDots}>
+                  {[0, 1, 2].map((dotIndex) => (
+                    <TouchableOpacity
+                      key={dotIndex}
+                      onPress={() => scrollToSection(dotIndex)}
+                      style={styles.scrollDotTouchable}
+                    >
+                      <View
+                        style={[
+                          styles.scrollProgressDot,
+                          {
+                            backgroundColor: activeDotIndex === dotIndex ? theme.colors.primary : theme.colors.border,
+                            width: activeDotIndex === dotIndex ? 10 : 6,
+                            height: activeDotIndex === dotIndex ? 6 : 6,
+                          },
+                        ]}
+                      />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
             )}
           </View>
 
@@ -723,6 +871,74 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins-SemiBold",
     marginBottom: 15,
   },
+  tagsContainer: {
+    position: "relative",
+    marginBottom: 20,
+  },
+  tagsScrollView: {
+    flexGrow: 0,
+  },
+  tagsScrollViewContent: {
+    paddingRight: 40, // Space for the scroll indicator
+  },
+  tagItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginRight: 10,
+    marginBottom: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  tagEmoji: {
+    fontSize: 16,
+    marginRight: 6,
+  },
+  tagName: {
+    fontSize: 14,
+    fontFamily: "Poppins-Medium",
+  },
+  scrollIndicatorButton: {
+    position: "absolute",
+    right: 0,
+    top: "50%",
+    transform: [{ translateY: -12 }],
+    width: 30,
+    height: 30,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
+  },
+  scrollIndicator: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  scrollProgressContainer: {
+    alignItems: "center",
+    marginTop: 8,
+  },
+  scrollProgressDots: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  scrollDotTouchable: {
+    padding: 8, // Larger touch target
+    marginHorizontal: 2,
+  },
+  scrollProgressDot: {
+    borderRadius: 3,
+    marginHorizontal: 1,
+  },
   notificationOptions: {
     borderRadius: 8,
     marginBottom: 15,
@@ -791,18 +1007,6 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 16,
     fontFamily: "Poppins-Medium",
-  },
-  showMoreTags: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    paddingVertical: 10,
-    marginBottom: 15,
-  },
-  showMoreTagsText: {
-    fontSize: 14,
-    fontFamily: "Poppins-Medium",
-    marginRight: 5,
   },
   calendarHeader: {
     flexDirection: "row",

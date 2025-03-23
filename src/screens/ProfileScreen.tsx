@@ -6,13 +6,7 @@ import { useNavigation } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "../context/ThemeContext"
 import { useAuth } from "../context/AuthContext"
-
-const LANGUAGES = [
-  { id: "en", name: "English" },
-  { id: "th", name: "Thai" },
-  { id: "es", name: "Spanish" },
-  { id: "fr", name: "French" },
-]
+import { useLanguage, LANGUAGES } from "../context/LanguageContext"
 
 // Mock invitation data
 const MOCK_INVITATION = {
@@ -26,18 +20,20 @@ const MOCK_INVITATION = {
   timestamp: new Date().toISOString(),
 }
 
+type Invitation = typeof MOCK_INVITATION
+
 const ProfileScreen = () => {
   const navigation = useNavigation()
   const { theme, toggleTheme } = useTheme()
   const { user, signOut } = useAuth()
+  const { locale, setLocale, t } = useLanguage()
   const [notificationsEnabled, setNotificationsEnabled] = useState(true)
-  const [selectedLanguage, setSelectedLanguage] = useState("en")
   const [showLanguages, setShowLanguages] = useState(false)
   const [showInvitations, setShowInvitations] = useState(false)
 
   // For demo purposes, let's assume we have an invitation
   const [hasInvitation, setHasInvitation] = useState(true)
-  const [invitation, setInvitation] = useState(MOCK_INVITATION)
+  const [invitation, setInvitation] = useState<Invitation | undefined>(MOCK_INVITATION)
 
   const handleSignOut = async () => {
     try {
@@ -84,22 +80,19 @@ const ProfileScreen = () => {
     // In a real app, you would make an API call to reject the invitation
     // For demo purposes, we'll just update the local state
     setHasInvitation(false)
-    setInvitation(null)
+    setInvitation(undefined)
     setShowInvitations(false)
   }
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.colors.text }]}>Profile</Text>
+        <Text style={[styles.title, { color: theme.colors.text }]}>{t("profile")}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.profileSection}>
-          <Image
-            source={{ uri: user?.photoURL || "../../assets/JaneDoe.png" }}
-            style={styles.profileImage}
-          />
+          <Image source={{ uri: user?.photoURL || "../../assets/JaneDoe.png" }} style={styles.profileImage} />
           <Text style={[styles.username, { color: theme.colors.text }]}>{user?.displayName || "User"}</Text>
           <Text style={[styles.email, { color: theme.colors.secondaryText }]}>{user?.email || "user@example.com"}</Text>
         </View>
@@ -112,7 +105,7 @@ const ProfileScreen = () => {
             <View style={styles.partnerInfo}>
               <Image source={{ uri: "/placeholder.svg?height=150&width=150" }} style={styles.partnerImage} />
               <View>
-                <Text style={[styles.partnerLabel, { color: theme.colors.secondaryText }]}>Your Partner</Text>
+                <Text style={[styles.partnerLabel, { color: theme.colors.secondaryText }]}>{t("yourPartner")}</Text>
                 <Text style={[styles.partnerName, { color: theme.colors.text }]}>Jane Doe</Text>
               </View>
             </View>
@@ -128,9 +121,9 @@ const ProfileScreen = () => {
                 <Ionicons name="person-add" size={24} color={theme.colors.primary} />
               </View>
               <View>
-                <Text style={[styles.partnerName, { color: theme.colors.text }]}>Add Partner</Text>
+                <Text style={[styles.partnerName, { color: theme.colors.text }]}>{t("addPartner")}</Text>
                 <Text style={[styles.partnerLabel, { color: theme.colors.secondaryText }]}>
-                  Connect with your partner
+                  {t("connectWithPartner")}
                 </Text>
               </View>
             </View>
@@ -147,9 +140,9 @@ const ProfileScreen = () => {
               <Ionicons name="mail" size={24} color={theme.colors.primary} />
             </View>
             <View>
-              <Text style={[styles.partnerName, { color: theme.colors.text }]}>Invitations</Text>
+              <Text style={[styles.partnerName, { color: theme.colors.text }]}>{t("invitations")}</Text>
               <Text style={[styles.partnerLabel, { color: theme.colors.secondaryText }]}>
-                {hasInvitation ? "You have a new invitation" : "No new invitations"}
+                {hasInvitation ? t("youHaveNewInvitation") : t("noNewInvitations")}
               </Text>
             </View>
           </View>
@@ -161,7 +154,7 @@ const ProfileScreen = () => {
         </TouchableOpacity>
 
         <View style={styles.settingsSection}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Account</Text>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t("account")}</Text>
 
           <TouchableOpacity
             style={[styles.settingsItem, { backgroundColor: theme.colors.card }]}
@@ -169,7 +162,7 @@ const ProfileScreen = () => {
           >
             <View style={styles.settingsItemLeft}>
               <Ionicons name="person-outline" size={24} color={theme.colors.primary} />
-              <Text style={[styles.settingsItemText, { color: theme.colors.text }]}>Edit Profile</Text>
+              <Text style={[styles.settingsItemText, { color: theme.colors.text }]}>{t("editProfile")}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={theme.colors.secondaryText} />
           </TouchableOpacity>
@@ -180,12 +173,12 @@ const ProfileScreen = () => {
           >
             <View style={styles.settingsItemLeft}>
               <Ionicons name="lock-closed-outline" size={24} color={theme.colors.primary} />
-              <Text style={[styles.settingsItemText, { color: theme.colors.text }]}>Change Password</Text>
+              <Text style={[styles.settingsItemText, { color: theme.colors.text }]}>{t("changePassword")}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={theme.colors.secondaryText} />
           </TouchableOpacity>
 
-          <Text style={[styles.sectionTitle, { color: theme.colors.text, marginTop: 20 }]}>Settings</Text>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text, marginTop: 20 }]}>{t("settings")}</Text>
 
           <View style={[styles.settingsItem, { backgroundColor: theme.colors.card }]}>
             <View style={styles.settingsItemLeft}>
@@ -194,7 +187,7 @@ const ProfileScreen = () => {
                 size={24}
                 color={theme.colors.primary}
               />
-              <Text style={[styles.settingsItemText, { color: theme.colors.text }]}>Dark Mode</Text>
+              <Text style={[styles.settingsItemText, { color: theme.colors.text }]}>{t("darkMode")}</Text>
             </View>
             <Switch
               value={theme.mode === "dark"}
@@ -207,7 +200,7 @@ const ProfileScreen = () => {
           <View style={[styles.settingsItem, { backgroundColor: theme.colors.card }]}>
             <View style={styles.settingsItemLeft}>
               <Ionicons name="notifications-outline" size={24} color={theme.colors.primary} />
-              <Text style={[styles.settingsItemText, { color: theme.colors.text }]}>Notifications</Text>
+              <Text style={[styles.settingsItemText, { color: theme.colors.text }]}>{t("notifications")}</Text>
             </View>
             <Switch
               value={notificationsEnabled}
@@ -223,11 +216,11 @@ const ProfileScreen = () => {
           >
             <View style={styles.settingsItemLeft}>
               <Ionicons name="language-outline" size={24} color={theme.colors.primary} />
-              <Text style={[styles.settingsItemText, { color: theme.colors.text }]}>Language</Text>
+              <Text style={[styles.settingsItemText, { color: theme.colors.text }]}>{t("language")}</Text>
             </View>
             <View style={styles.languageSelector}>
               <Text style={[styles.languageText, { color: theme.colors.secondaryText }]}>
-                {LANGUAGES.find((lang) => lang.id === selectedLanguage)?.name}
+                {LANGUAGES.find((lang) => lang.id === locale)?.name}
               </Text>
               <Ionicons
                 name={showLanguages ? "chevron-up" : "chevron-down"}
@@ -244,12 +237,12 @@ const ProfileScreen = () => {
                   key={lang.id}
                   style={[
                     styles.languageOption,
-                    selectedLanguage === lang.id && {
+                    locale === lang.id && {
                       backgroundColor: `${theme.colors.primary}20`,
                     },
                   ]}
                   onPress={() => {
-                    setSelectedLanguage(lang.id)
+                    setLocale(lang.id)
                     setShowLanguages(false)
                   }}
                 >
@@ -257,7 +250,7 @@ const ProfileScreen = () => {
                     style={[
                       styles.languageOptionText,
                       { color: theme.colors.text },
-                      selectedLanguage === lang.id && {
+                      locale === lang.id && {
                         color: theme.colors.primary,
                         fontFamily: "Poppins-SemiBold",
                       },
@@ -265,7 +258,7 @@ const ProfileScreen = () => {
                   >
                     {lang.name}
                   </Text>
-                  {selectedLanguage === lang.id && <Ionicons name="checkmark" size={20} color={theme.colors.primary} />}
+                  {locale === lang.id && <Ionicons name="checkmark" size={20} color={theme.colors.primary} />}
                 </TouchableOpacity>
               ))}
             </View>
@@ -277,7 +270,7 @@ const ProfileScreen = () => {
           >
             <View style={styles.settingsItemLeft}>
               <Ionicons name="options-outline" size={24} color={theme.colors.primary} />
-              <Text style={[styles.settingsItemText, { color: theme.colors.text }]}>Permissions</Text>
+              <Text style={[styles.settingsItemText, { color: theme.colors.text }]}>{t("permissions")}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={theme.colors.secondaryText} />
           </TouchableOpacity>
@@ -287,7 +280,7 @@ const ProfileScreen = () => {
             onPress={handleSignOut}
           >
             <Ionicons name="log-out-outline" size={24} color="red" />
-            <Text style={styles.logoutText}>Log Out</Text>
+            <Text style={styles.logoutText}>{t("logOut")}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -302,7 +295,7 @@ const ProfileScreen = () => {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: theme.colors.card }]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Partner Invitations</Text>
+              <Text style={[styles.modalTitle, { color: theme.colors.text }]}>{t("partnerInvitations")}</Text>
               <TouchableOpacity onPress={() => setShowInvitations(false)}>
                 <Ionicons name="close" size={24} color={theme.colors.text} />
               </TouchableOpacity>
@@ -311,35 +304,35 @@ const ProfileScreen = () => {
             {hasInvitation && invitation ? (
               <View style={styles.invitationContainer}>
                 <Image source={{ uri: invitation.sender.photoURL }} style={styles.invitationImage} />
-                <Text style={[styles.invitationMessage, { color: theme.colors.text }]}>{invitation.message}</Text>
+                <Text style={[styles.invitationMessage, { color: theme.colors.text }]}>
+                  {invitation.message.replace("{name}", invitation.sender.name)}
+                </Text>
 
                 <View style={styles.invitationButtons}>
                   <TouchableOpacity
                     style={[styles.rejectButton, { borderColor: theme.colors.border }]}
                     onPress={handleRejectInvitation}
                   >
-                    <Text style={[styles.rejectButtonText, { color: theme.colors.text }]}>Reject</Text>
+                    <Text style={[styles.rejectButtonText, { color: theme.colors.text }]}>{t("reject")}</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
                     style={[styles.acceptButton, { backgroundColor: theme.colors.primary }]}
                     onPress={handleAcceptInvitation}
                   >
-                    <Text style={styles.acceptButtonText}>Accept</Text>
+                    <Text style={styles.acceptButtonText}>{t("accept")}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             ) : (
               <View style={styles.noInvitationsContainer}>
                 <Ionicons name="mail-outline" size={60} color={theme.colors.secondaryText} />
-                <Text style={[styles.noInvitationsText, { color: theme.colors.text }]}>
-                  You don't have any invitations yet
-                </Text>
+                <Text style={[styles.noInvitationsText, { color: theme.colors.text }]}>{t("noInvitationsYet")}</Text>
                 <TouchableOpacity
                   style={[styles.closeButton, { backgroundColor: theme.colors.primary }]}
                   onPress={() => setShowInvitations(false)}
                 >
-                  <Text style={styles.closeButtonText}>Close</Text>
+                  <Text style={styles.closeButtonText}>{t("close")}</Text>
                 </TouchableOpacity>
               </View>
             )}
